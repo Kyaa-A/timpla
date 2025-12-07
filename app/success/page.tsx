@@ -1,15 +1,43 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
+import { Suspense } from "react";
 
-export default function SuccessPage() {
+function SuccessContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isLoaded } = useUser();
   const [countdown, setCountdown] = useState(5);
+  const [activating, setActivating] = useState(true);
+
+  const planType = searchParams.get("plan") || "month";
 
   useEffect(() => {
+    // Activate subscription after successful payment
+    const activateSubscription = async () => {
+      try {
+        await fetch("/api/activate-subscription", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ planType }),
+        });
+      } catch (error) {
+        console.error("Failed to activate subscription:", error);
+      } finally {
+        setActivating(false);
+      }
+    };
+
+    if (isLoaded && user) {
+      activateSubscription();
+    }
+  }, [isLoaded, user, planType]);
+
+  useEffect(() => {
+    if (activating) return;
+
     // Countdown timer
     const timer = setInterval(() => {
       setCountdown((prev) => {
@@ -23,7 +51,7 @@ export default function SuccessPage() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [router]);
+  }, [router, activating]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-50 via-white to-emerald-50/50 dark:from-slate-900 dark:via-slate-900 dark:to-slate-800">
@@ -102,10 +130,24 @@ export default function SuccessPage() {
           </button>
 
           <p className="text-sm text-slate-500 dark:text-slate-500">
-            Redirecting in {countdown} seconds...
+            {activating ? "Activating your subscription..." : `Redirecting in ${countdown} seconds...`}
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+export default function SuccessPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-xl font-semibold">Loading...</h2>
+        </div>
+      </div>
+    }>
+      <SuccessContent />
+    </Suspense>
   );
 }

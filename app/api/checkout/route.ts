@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
         },
       ],
       payment_method_types: ["gcash", "grab_pay", "paymaya", "card"],
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success`,
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success?plan=${planType}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/subscribe`,
       description: `TIMPLA ${plan.name} Subscription`,
       metadata: {
