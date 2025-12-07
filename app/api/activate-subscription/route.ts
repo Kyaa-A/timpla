@@ -17,10 +17,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Plan type required" }, { status: 400 });
     }
 
-    // Simple update - just activate subscription
-    await prisma.profile.update({
+    const email = clerkUser.emailAddresses[0]?.emailAddress || "";
+
+    // Upsert - create profile if doesn't exist, update if it does
+    await prisma.profile.upsert({
       where: { userId: clerkUser.id },
-      data: {
+      update: {
+        subscriptionActive: true,
+        subscriptionTier: planType,
+      },
+      create: {
+        userId: clerkUser.id,
+        email: email,
         subscriptionActive: true,
         subscriptionTier: planType,
       },
