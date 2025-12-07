@@ -123,11 +123,8 @@ async function handleCheckoutSessionPaid(checkoutData: {
     await prisma.profile.update({
       where: { userId },
       data: {
-        paymongoPaymentId: paymentId,
         subscriptionActive: true,
         subscriptionTier: planType || null,
-        subscriptionStartDate: new Date(),
-        subscriptionEndDate: getSubscriptionEndDate(planType),
       },
     });
     console.log(`Subscription activated for user ${userId}`);

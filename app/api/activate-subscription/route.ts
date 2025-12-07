@@ -17,30 +17,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Plan type required" }, { status: 400 });
     }
 
-    const now = new Date();
-    let endDate: Date;
-
-    switch (planType) {
-      case "week":
-        endDate = new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000);
-        break;
-      case "month":
-        endDate = new Date(now.setMonth(now.getMonth() + 1));
-        break;
-      case "year":
-        endDate = new Date(now.setFullYear(now.getFullYear() + 1));
-        break;
-      default:
-        endDate = new Date(now.setMonth(now.getMonth() + 1));
-    }
-
+    // Simple update - just activate subscription
     await prisma.profile.update({
       where: { userId: clerkUser.id },
       data: {
         subscriptionActive: true,
         subscriptionTier: planType,
-        subscriptionStartDate: new Date(),
-        subscriptionEndDate: endDate,
       },
     });
 
