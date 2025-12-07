@@ -130,13 +130,11 @@ export async function expireCheckoutSession(
 }
 
 // Verify webhook signature
-export function verifyWebhookSignature(
+export async function verifyWebhookSignature(
   payload: string,
   signature: string,
   webhookSecret: string
-): boolean {
-  const crypto = require("crypto");
-
+): Promise<boolean> {
   // PayMongo signature format: t=timestamp,te=test_signature,li=live_signature
   const parts = signature.split(",");
   const timestampPart = parts.find((p: string) => p.startsWith("t="));
@@ -150,10 +148,26 @@ export function verifyWebhookSignature(
   const sig = signaturePart.split("=")[1];
 
   const signedPayload = `${timestamp}.${payload}`;
-  const expectedSignature = crypto
-    .createHmac("sha256", webhookSecret)
-    .update(signedPayload)
-    .digest("hex");
+
+  // Use Web Crypto API instead of Node.js crypto
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw",
+    encoder.encode(webhookSecret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+
+  const signatureBuffer = await crypto.subtle.sign(
+    "HMAC",
+    key,
+    encoder.encode(signedPayload)
+  );
+
+  const expectedSignature = Array.from(new Uint8Array(signatureBuffer))
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
 
   return sig === expectedSignature;
 }

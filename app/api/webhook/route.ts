@@ -42,7 +42,7 @@ export async function POST(request: NextRequest) {
 
   // Verify webhook signature
   if (signature && webhookSecret) {
-    const isValid = verifyWebhookSignature(body, signature, webhookSecret);
+    const isValid = await verifyWebhookSignature(body, signature, webhookSecret);
     if (!isValid) {
       console.error("Invalid PayMongo webhook signature");
       return NextResponse.json({ error: "Invalid signature" }, { status: 400 });

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarIcon, ChevronLeftIcon, ChevronRightIcon } from "./icons";
+import { CalendarIcon } from "./icons";
 
 interface DailyMealPlan {
   Breakfast?: string;
