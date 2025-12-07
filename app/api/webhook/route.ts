@@ -117,8 +117,6 @@ async function handleCheckoutSessionPaid(checkoutData: {
     return;
   }
 
-  const paymentId = checkoutData.id;
-
   try {
     await prisma.profile.update({
       where: { userId },
@@ -162,20 +160,5 @@ async function handlePaymentFailed(paymentData: {
     console.log(`Subscription deactivated for user ${userId} due to failed payment`);
   } catch (error: unknown) {
     console.log(error instanceof Error ? error.message : "Unknown error");
-  }
-}
-
-function getSubscriptionEndDate(planType: string | undefined): Date {
-  const now = new Date();
-
-  switch (planType) {
-    case "week":
-      return new Date(now.setDate(now.getDate() + 7));
-    case "month":
-      return new Date(now.setMonth(now.getMonth() + 1));
-    case "year":
-      return new Date(now.setFullYear(now.getFullYear() + 1));
-    default:
-      return new Date(now.setMonth(now.getMonth() + 1)); // Default to 1 month
   }
 }
