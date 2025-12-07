@@ -28,9 +28,7 @@ export async function POST() {
       where: { userId: clerkUser.id },
       data: {
         subscriptionTier: null,
-        paymongoPaymentId: null,
         subscriptionActive: false,
-        subscriptionEndDate: new Date(), // End immediately
       },
     });
 
