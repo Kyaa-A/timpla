@@ -2,21 +2,6 @@ import { prisma } from "@/lib/prisma";
 import { retrieveCheckoutSession } from "@/lib/paymongo";
 import { NextRequest, NextResponse } from "next/server";
 
-function getSubscriptionEndDate(planType: string | undefined): Date {
-  const now = new Date();
-
-  switch (planType) {
-    case "week":
-      return new Date(now.setDate(now.getDate() + 7));
-    case "month":
-      return new Date(now.setMonth(now.getMonth() + 1));
-    case "year":
-      return new Date(now.setFullYear(now.getFullYear() + 1));
-    default:
-      return new Date(now.setMonth(now.getMonth() + 1));
-  }
-}
-
 export async function POST(request: NextRequest) {
   try {
     const { sessionId } = await request.json();
@@ -59,20 +44,14 @@ export async function POST(request: NextRequest) {
     await prisma.profile.upsert({
       where: { userId },
       update: {
-        paymongoPaymentId: session.id,
         subscriptionActive: true,
         subscriptionTier: planType || null,
-        subscriptionStartDate: new Date(),
-        subscriptionEndDate: getSubscriptionEndDate(planType),
       },
       create: {
         userId,
         email: profile?.email || "",
-        paymongoPaymentId: session.id,
         subscriptionActive: true,
         subscriptionTier: planType || null,
-        subscriptionStartDate: new Date(),
-        subscriptionEndDate: getSubscriptionEndDate(planType),
       },
     });
 

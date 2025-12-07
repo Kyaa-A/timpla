@@ -8,10 +8,17 @@ export async function POST(request: NextRequest) {
   try {
     const clerkUser = await currentUser();
     if (!clerkUser) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: "Unauthorized - no user" }, { status: 401 });
     }
 
-    const { planType } = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+
+    const { planType } = body;
 
     if (!planType) {
       return NextResponse.json({ error: "Plan type required" }, { status: 400 });
@@ -35,8 +42,9 @@ export async function POST(request: NextRequest) {
     });
 
     return NextResponse.json({ success: true });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error("Activate subscription error:", error);
-    return NextResponse.json({ error: "Internal Error" }, { status: 500 });
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
