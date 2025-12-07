@@ -113,7 +113,7 @@ export default function SubscribePage() {
                       {plan.name}
                     </h3>
                     <div className="mb-4">
-                      <span className="text-5xl font-bold text-slate-900 dark:text-white">${plan.amount}</span>
+                      <span className="text-5xl font-bold text-slate-900 dark:text-white">₱{plan.amount}</span>
                       <span className="text-slate-500 dark:text-slate-400 ml-2 text-lg">/{plan.interval}</span>
                     </div>
                     <p className="text-slate-600 dark:text-slate-400 text-sm leading-relaxed">
@@ -223,7 +223,7 @@ export default function SubscribePage() {
                 What payment methods do you accept?
               </h3>
               <p className="text-slate-600 dark:text-slate-400 text-sm">
-                We accept all major credit cards, debit cards, and PayPal through our secure payment provider Stripe.
+                We accept GCash, GrabPay, Maya, and all major credit/debit cards through our secure payment provider.
               </p>
             </div>
             <div className="bg-white dark:bg-slate-800/50 rounded-xl border border-slate-200/50 dark:border-slate-700/50 p-6">

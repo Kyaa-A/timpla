@@ -417,12 +417,12 @@ export default function Profile() {
                             {currentPlan.name}
                           </p>
                           <p className="text-emerald-100">
-                            ${currentPlan.amount} {currentPlan.currency} / {currentPlan.interval}
+                            ₱{currentPlan.amount} / {currentPlan.interval}
                           </p>
                         </div>
                         <div className="flex items-center gap-2">
                           <span className="text-5xl font-bold opacity-20">
-                            ${currentPlan.amount}
+                            ₱{currentPlan.amount}
                           </span>
                         </div>
                       </div>
@@ -463,7 +463,7 @@ export default function Profile() {
                         </option>
                         {availablePlans.map((plan, key) => (
                           <option key={key} value={plan.interval}>
-                            {plan.name} - ${plan.amount} / {plan.interval}
+                            {plan.name} - ₱{plan.amount} / {plan.interval}
                           </option>
                         ))}
                       </select>
