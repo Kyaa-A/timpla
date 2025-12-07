@@ -44,10 +44,21 @@ export async function POST(request: NextRequest) {
       Return just the json with no extra commentaries and no backticks.
     `;
 
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
     const result = await model.generateContent(prompt);
     const aiResponse = await result.response;
-    const aiContent = aiResponse.text().trim();
+    let aiContent = aiResponse.text().trim();
+
+    // Remove markdown code blocks if present
+    if (aiContent.startsWith("```json")) {
+      aiContent = aiContent.slice(7);
+    } else if (aiContent.startsWith("```")) {
+      aiContent = aiContent.slice(3);
+    }
+    if (aiContent.endsWith("```")) {
+      aiContent = aiContent.slice(0, -3);
+    }
+    aiContent = aiContent.trim();
 
     let parsedMealPlan: { [day: string]: DailyMealPlan };
     console.log(aiContent);
@@ -67,7 +78,8 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({ mealPlan: parsedMealPlan });
-  } catch {
+  } catch (error) {
+    console.error("Generate mealplan error:", error);
     return NextResponse.json({ error: "Internal Error" }, { status: 500 });
   }
 }

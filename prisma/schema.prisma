@@ -14,12 +14,61 @@ datasource db {
 }
 
 model Profile {
-  id                   String   @id @default(uuid())
-  userId               String   @unique
-  email                String
-  subscriptionActive   Boolean  @default(false)
-  subscriptionTier     String?
-  stripeSubscriptionId String?  @unique
-  createdAt            DateTime @default(now())
-  updatedAt            DateTime @updatedAt
+  id                    String      @id @default(uuid())
+  userId                String      @unique
+  email                 String
+  subscriptionActive    Boolean     @default(false)
+  subscriptionTier      String?
+  stripeSubscriptionId  String?     @unique
+  paymongoPaymentId     String?     @unique
+  subscriptionStartDate DateTime?
+  subscriptionEndDate   DateTime?
+
+  // User Preferences
+  defaultDietType       String?     @default("balanced")
+  defaultCalories       Int?        @default(2000)
+  allergies             String?
+  preferredCuisine      String?
+  includeSnacks         Boolean     @default(true)
+  defaultPlanDays       Int?        @default(7)
+
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  mealPlans             MealPlan[]
+  favorites             Favorite[]
+}
+
+model MealPlan {
+  id          String     @id @default(uuid())
+  userId      String
+  name        String     @default("Meal Plan")
+  dietType    String
+  calories    Int
+  allergies   String?
+  cuisine     String?
+  days        Int
+  snacks      Boolean    @default(true)
+  planData    Json
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  profile     Profile    @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  favorites   Favorite[]
+
+  @@index([userId])
+}
+
+model Favorite {
+  id         String   @id @default(uuid())
+  userId     String
+  mealPlanId String
+  mealDay    String
+  mealType   String
+  mealName   String
+  calories   Int?
+  createdAt  DateTime @default(now())
+  profile    Profile  @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  mealPlan   MealPlan @relation(fields: [mealPlanId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, mealPlanId, mealDay, mealType])
+  @@index([userId])
 }

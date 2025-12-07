@@ -1,13 +1,13 @@
-import { getPriceIDFromType } from "@/lib/plans";
+import { getPlanByType, getAmountInCentavos } from "@/lib/plans";
+import { createCheckoutSession } from "@/lib/paymongo";
 import { NextRequest, NextResponse } from "next/server";
-import { stripe } from "@/lib/stripe";
 
 export async function POST(request: NextRequest) {
   try {
     const { planType, userId, email } = await request.json();
     if (!planType || !userId || !email) {
       return NextResponse.json(
-        { error: "Plan type, user id, and email are re quired" },
+        { error: "Plan type, user id, and email are required" },
         { status: 400 }
       );
     }
@@ -18,28 +18,39 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Invalid plan type" }, { status: 400 });
     }
 
-    const priceID = getPriceIDFromType(planType);
-    if (!priceID) {
+    const plan = getPlanByType(planType);
+    if (!plan) {
       return NextResponse.json({ error: "Invalid plan type" }, { status: 400 });
     }
 
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
+    const amountInCentavos = getAmountInCentavos(planType);
+
+    const session = await createCheckoutSession({
+      billing: {
+        email: email,
+      },
       line_items: [
         {
-          price: priceID,
+          name: plan.name,
           quantity: 1,
+          amount: amountInCentavos,
+          currency: "PHP",
+          description: plan.description,
         },
       ],
-      customer_email: email,
-      mode: "subscription",
-      metadata: { clerkUserId: userId, planType },
-      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success?session_id={CHECKOUT_SESSION_ID}`,
+      payment_method_types: ["gcash", "grab_pay", "paymaya", "card"],
+      success_url: `${process.env.NEXT_PUBLIC_APP_URL}/success?session_id=${"{CHECKOUT_SESSION_ID}"}`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL}/subscribe`,
+      description: `TIMPLA ${plan.name} Subscription`,
+      metadata: {
+        clerkUserId: userId,
+        planType: planType,
+      },
     });
 
-    return NextResponse.json({ url: session.url }, { status: 200 });
+    return NextResponse.json({ url: session.attributes.checkout_url }, { status: 200 });
   } catch (error: unknown) {
+    console.error("Checkout error:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Internal server error" },
       { status: 500 }

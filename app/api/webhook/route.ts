@@ -1,66 +1,157 @@
 import { prisma } from "@/lib/prisma";
-import { stripe } from "@/lib/stripe";
+import { verifyWebhookSignature } from "@/lib/paymongo";
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
+
+interface PayMongoWebhookEvent {
+  data: {
+    id: string;
+    type: string;
+    attributes: {
+      type: string;
+      data: {
+        id: string;
+        type: string;
+        attributes: {
+          checkout_url?: string;
+          status: string;
+          payment_intent?: {
+            id: string;
+            attributes: {
+              status: string;
+              metadata?: Record<string, string>;
+            };
+          };
+          payments?: Array<{
+            id: string;
+            attributes: {
+              status: string;
+            };
+          }>;
+          metadata?: Record<string, string>;
+        };
+      };
+    };
+  };
+}
 
 export async function POST(request: NextRequest) {
   const body = await request.text();
-  const signature = request.headers.get("stripe-signature");
+  const signature = request.headers.get("paymongo-signature");
 
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
+  const webhookSecret = process.env.PAYMONGO_WEBHOOK_SECRET!;
 
-  let event: Stripe.Event;
-
-  try {
-    event = stripe.webhooks.constructEvent(
-      body,
-      signature || "",
-      webhookSecret
-    );
-  } catch (error: unknown) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid signature" }, { status: 400 });
+  // Verify webhook signature
+  if (signature && webhookSecret) {
+    const isValid = verifyWebhookSignature(body, signature, webhookSecret);
+    if (!isValid) {
+      console.error("Invalid PayMongo webhook signature");
+      return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
+    }
   }
 
+  let event: PayMongoWebhookEvent;
+
   try {
-    switch (event.type) {
-      case "checkout.session.completed": {
-        const session = event.data.object as Stripe.Checkout.Session;
-        await handleCheckoutSessionCompleted(session);
+    event = JSON.parse(body);
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const eventType = event.data.attributes.type;
+
+  try {
+    switch (eventType) {
+      case "checkout_session.payment.paid": {
+        const checkoutData = event.data.attributes.data;
+        await handleCheckoutSessionPaid(checkoutData);
         break;
       }
-      case "invoice.payment_failed": {
-        const session = event.data.object as Stripe.Invoice;
-        await handleInvoicePaymentFailed(session);
+      case "payment.paid": {
+        console.log("Payment paid event received");
         break;
       }
-      case "customer.subscription.deleted": {
-        const session = event.data.object as Stripe.Subscription;
-        await handleCustomerSubscriptionDeleted(session);
+      case "payment.failed": {
+        const paymentData = event.data.attributes.data;
+        await handlePaymentFailed(paymentData);
         break;
       }
       default:
-        console.log("Unhandled event type" + event.type);
+        console.log("Unhandled event type: " + eventType);
     }
   } catch (error: unknown) {
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Invalid signature" }, { status: 400 });
+    console.error("Webhook processing error:", error);
+    return NextResponse.json(
+      { error: error instanceof Error ? error.message : "Webhook processing error" },
+      { status: 500 }
+    );
   }
-  return NextResponse.json({});
+
+  return NextResponse.json({ received: true });
 }
 
-async function handleCheckoutSessionCompleted(
-  session: Stripe.Checkout.Session
-) {
-  const userId = session.metadata?.clerkUserId;
+async function handleCheckoutSessionPaid(checkoutData: {
+  id: string;
+  type: string;
+  attributes: {
+    status: string;
+    metadata?: Record<string, string>;
+    payment_intent?: {
+      id: string;
+      attributes: {
+        status: string;
+        metadata?: Record<string, string>;
+      };
+    };
+  };
+}) {
+  // Get metadata from checkout session or payment intent
+  const metadata =
+    checkoutData.attributes.metadata ||
+    checkoutData.attributes.payment_intent?.attributes?.metadata;
+
+  const userId = metadata?.clerkUserId;
+  const planType = metadata?.planType;
 
   if (!userId) {
-    console.log("No user id");
+    console.log("No user id in metadata");
     return;
   }
 
-  const subscriptionId = session.subscription as string;
+  const paymentId = checkoutData.id;
+
+  try {
+    await prisma.profile.update({
+      where: { userId },
+      data: {
+        paymongoPaymentId: paymentId,
+        subscriptionActive: true,
+        subscriptionTier: planType || null,
+        subscriptionStartDate: new Date(),
+        subscriptionEndDate: getSubscriptionEndDate(planType),
+      },
+    });
+    console.log(`Subscription activated for user ${userId}`);
+  } catch (error: unknown) {
+    console.log(
+      "Error updating profile: ",
+      error instanceof Error ? error.message : "Unknown error"
+    );
+  }
+}
+
+async function handlePaymentFailed(paymentData: {
+  id: string;
+  type: string;
+  attributes: {
+    status: string;
+    metadata?: Record<string, string>;
+  };
+}) {
+  const metadata = paymentData.attributes.metadata;
+  const userId = metadata?.clerkUserId;
 
   if (!userId) {
-    console.log("No subscription id");
+    console.log("No user id in failed payment metadata");
     return;
   }
 
@@ -68,89 +159,26 @@ async function handleCheckoutSessionCompleted(
     await prisma.profile.update({
       where: { userId },
       data: {
-        stripeSubscriptionId: subscriptionId,
-        subscriptionActive: true,
-        subscriptionTier: session.metadata?.planType || null,
-      },
-    });
-  } catch (error: unknown) {
-    console.log("Error updating profile: ", error instanceof Error ? error.message : "Unknown error");
-  }
-}
-
-async function handleInvoicePaymentFailed(invoice: Stripe.Invoice) {
-  const subId = (invoice as Stripe.Invoice & { subscription?: string }).subscription;
-
-  if (!subId) {
-    return;
-  }
-
-  let userId: string | undefined;
-  try {
-    const profile = await prisma.profile.findUnique({
-      where: {
-        stripeSubscriptionId: subId,
-      },
-      select: {
-        userId: true,
-      },
-    });
-    if (!profile?.userId) {
-      console.log("No profile found");
-      return;
-    }
-    userId = profile.userId;
-  } catch (error: unknown) {
-    console.log(error instanceof Error ? error.message : "Unknown error");
-    return;
-  }
-
-  try {
-    await prisma.profile.update({
-      where: { userId: userId },
-      data: {
         subscriptionActive: false,
       },
     });
+    console.log(`Subscription deactivated for user ${userId} due to failed payment`);
   } catch (error: unknown) {
     console.log(error instanceof Error ? error.message : "Unknown error");
   }
 }
-async function handleCustomerSubscriptionDeleted(
-  subscription: Stripe.Subscription
-) {
-  const subId = subscription.id;
 
-  let userId: string | undefined;
-  try {
-    const profile = await prisma.profile.findUnique({
-      where: {
-        stripeSubscriptionId: subId,
-      },
-      select: {
-        userId: true,
-      },
-    });
-    if (!profile?.userId) {
-      console.log("No profile found");
-      return;
-    }
-    userId = profile.userId;
-  } catch (error: unknown) {
-    console.log(error instanceof Error ? error.message : "Unknown error");
-    return;
-  }
+function getSubscriptionEndDate(planType: string | undefined): Date {
+  const now = new Date();
 
-  try {
-    await prisma.profile.update({
-      where: { userId: userId },
-      data: {
-        subscriptionActive: false,
-        stripeSubscriptionId: null,
-        subscriptionTier: null,
-      },
-    });
-  } catch (error: unknown) {
-    console.log(error instanceof Error ? error.message : "Unknown error");
+  switch (planType) {
+    case "week":
+      return new Date(now.setDate(now.getDate() + 7));
+    case "month":
+      return new Date(now.setMonth(now.getMonth() + 1));
+    case "year":
+      return new Date(now.setFullYear(now.getFullYear() + 1));
+    default:
+      return new Date(now.setMonth(now.getMonth() + 1)); // Default to 1 month
   }
 }

@@ -1,6 +1,7 @@
 {
-  "name": "kusinotes",
-  "version": "0.1.0",
+  "name": "timpla",
+  "version": "1.0.0",
+  "description": "TIMPLA - Tailored Intelligent Meal Planning Lifestyle Assistant",
   "private": true,
   "scripts": {
     "dev": "next dev",

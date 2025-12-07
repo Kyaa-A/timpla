@@ -11,8 +11,8 @@ export interface Plan {
 export const availablePlans: Plan[] = [
   {
     name: "Weekly Plan",
-    amount: 9.99,
-    currency: "USD",
+    amount: 49,
+    currency: "PHP",
     interval: "week",
     description:
       "Great if you want to try the service before committing longer.",
@@ -24,8 +24,8 @@ export const availablePlans: Plan[] = [
   },
   {
     name: "Monthly Plan",
-    amount: 39.99,
-    currency: "USD",
+    amount: 149,
+    currency: "PHP",
     interval: "month",
     isPopular: true,
     description:
@@ -38,8 +38,8 @@ export const availablePlans: Plan[] = [
   },
   {
     name: "Yearly Plan",
-    amount: 299.99,
-    currency: "USD",
+    amount: 999,
+    currency: "PHP",
     interval: "year",
     description:
       "Best value for those committed to improving their diet long-term",
@@ -51,10 +51,15 @@ export const availablePlans: Plan[] = [
   },
 ];
 
-const priceIDMap: Record<string, string> = {
-  week: process.env.STRIPE_PRICE_WEEKLY!,
-  month: process.env.STRIPE_PRICE_MONTHLY!,
-  year: process.env.STRIPE_PRICE_YEARLY!,
+// Get plan details by type
+export const getPlanByType = (planType: string) => {
+  return availablePlans.find((plan) => plan.interval === planType);
 };
 
-export const getPriceIDFromType = (planType: string) => priceIDMap[planType];
+// Convert amount to centavos for PayMongo (PHP)
+export const getAmountInCentavos = (planType: string): number => {
+  const plan = getPlanByType(planType);
+  if (!plan) return 0;
+  // PayMongo requires amount in centavos (smallest currency unit)
+  return plan.amount * 100; // Convert PHP to centavos
+};

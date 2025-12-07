@@ -16,8 +16,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KusiNotes",
-  description: "AI-powered meal planning with KusiNotes",
+  title: "TIMPLA - Tailored Intelligent Meal Planning Lifestyle Assistant",
+  description: "TIMPLA - Your AI-powered meal planning assistant. Get personalized meal plans tailored to your dietary preferences and health goals.",
+  keywords: ["meal planning", "AI", "nutrition", "diet", "health", "recipes", "meal prep"],
+  authors: [{ name: "TIMPLA Team" }],
   icons: {
     icon: [
       { url: "/logo-tab.png?v=3", sizes: "16x16", type: "image/png" },
@@ -28,6 +30,11 @@ export const metadata: Metadata = {
     shortcut: "/logo-tab.png?v=3",
     apple: "/logo-tab.png?v=3",
   },
+  openGraph: {
+    title: "TIMPLA - Tailored Intelligent Meal Planning Lifestyle Assistant",
+    description: "Your AI-powered meal planning assistant. Get personalized meal plans tailored to your dietary preferences and health goals.",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
@@ -37,7 +44,7 @@ export default function RootLayout({
 }>) {
   return (
     <ClerkProvider>
-      <html lang="en">
+      <html lang="en" suppressHydrationWarning>
         <head>
           <link rel="icon" href="/logo-tab.png?v=4" sizes="any" type="image/png" />
           <link rel="icon" href="/logo-tab.png?v=4" sizes="16x16" type="image/png" />
@@ -45,9 +52,26 @@ export default function RootLayout({
           <link rel="icon" href="/logo-tab.png?v=4" sizes="48x48" type="image/png" />
           <link rel="shortcut icon" href="/logo-tab.png?v=4" type="image/png" />
           <link rel="apple-touch-icon" href="/logo-tab.png?v=4" />
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+                (function() {
+                  try {
+                    var savedTheme = localStorage.getItem('theme');
+                    var prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                    if (savedTheme === 'dark' || (!savedTheme && prefersDark)) {
+                      document.documentElement.classList.add('dark');
+                    } else {
+                      document.documentElement.classList.remove('dark');
+                    }
+                  } catch (e) {}
+                })();
+              `,
+            }}
+          />
         </head>
         <body
-          className={`${geistSans.variable} ${geistMono.variable} antialiased bg-gray-50 text-gray-900`}
+          className={`${geistSans.variable} ${geistMono.variable} antialiased bg-white dark:bg-slate-950 text-slate-900 dark:text-slate-100 transition-colors duration-300`}
         >
           <ReactQueryClientProvider>
             <Navbar />
