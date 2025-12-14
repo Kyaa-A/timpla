@@ -2,11 +2,11 @@
 
 **Tailored Intelligent Meal Planning Lifestyle Assistant**
 
-[![Live Demo](https://img.shields.io/badge/Live%20Demo-timpla.vercel.app-00C853?style=for-the-badge&logo=vercel)](https://timpla.vercel.app/)
-
 TIMPLA is a modern, AI-powered web application that helps you create personalized meal plans tailored to your lifestyle, dietary preferences, and health goals. Whether you're looking to maintain a healthy diet, manage specific dietary requirements, or explore new cuisines, TIMPLA generates customized meal plans just for you.
 
-![TIMPLA Dashboard](public/dashboard.webp)
+![TIMPLA Dashboard](https://raw.githubusercontent.com/Kyaa-A/timpla/main/public/dashboard.webp)
+
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-timpla.vercel.app-00C853?style=for-the-badge&logo=vercel)](https://timpla.vercel.app/)
 
 ## ✨ Features
 
