@@ -2,12 +2,16 @@
 
 **Tailored Intelligent Meal Planning Lifestyle Assistant**
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-timpla.vercel.app-00C853?style=for-the-badge&logo=vercel)](https://timpla.vercel.app/)
+
 TIMPLA is a modern, AI-powered web application that helps you create personalized meal plans tailored to your lifestyle, dietary preferences, and health goals. Whether you're looking to maintain a healthy diet, manage specific dietary requirements, or explore new cuisines, TIMPLA generates customized meal plans just for you.
+
+![TIMPLA Dashboard](public/dashboard.webp)
 
 ## ✨ Features
 
 ### Core Features
-- **AI-Powered Meal Planning**: Generate personalized meal plans using Google Gemini AI
+- **AI-Powered Meal Planning**: Generate personalized meal plans using Groq AI
 - **Flexible Dietary Options**: Support for various diet types (balanced, vegetarian, vegan, keto, paleo, mediterranean, low-carb, high-protein)
 - **Allergy Management**: Specify food allergies and dietary restrictions
 - **Cuisine Preferences**: Choose from different cuisines and cooking styles
@@ -35,7 +39,7 @@ TIMPLA is a modern, AI-powered web application that helps you create personalize
 - **Authentication**: Clerk
 - **Database**: PostgreSQL with Prisma ORM
 - **Payments**: Stripe
-- **AI**: Google Gemini API (gemini-1.5-flash)
+- **AI**: Groq API (LLaMA)
 - **Notifications**: React Hot Toast
 - **Deployment**: Vercel
 
@@ -92,7 +96,7 @@ timpla/
 - PostgreSQL database (Neon, Supabase, or local)
 - Clerk account
 - Stripe account
-- Google AI API key
+- Groq API key
 
 ### Installation
 
@@ -122,8 +126,8 @@ timpla/
    NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="pk_test_xxxxx"
    STRIPE_WEBHOOK_SECRET="whsec_xxxxx"
 
-   # Google Gemini AI
-   GOOGLE_AI_API_KEY="your_google_ai_api_key"
+   # Groq AI
+   GROQ_API_KEY="your_groq_api_key"
 
    # App URL
    NEXT_PUBLIC_APP_URL="http://localhost:3000"
